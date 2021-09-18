@@ -67,8 +67,6 @@ def processReadChannel(pool, channel):
 def process(adapterDrv, channels):
     pool = multiprocessing.Pool(len(channels), initRecognizer)
 
-    adapterDrv = "/dev/dvb/adapter0/dvr0"
-
     ffmpegCmdLine = ['ffmpeg', '-y', '-v', 'quiet', '-i', adapterDrv]
 
     for channel in channels:
