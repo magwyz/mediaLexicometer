@@ -13,7 +13,7 @@ class Channel(models.Model):
 class Word(models.Model):
     dateTime = models.DateTimeField()
     word = models.CharField(max_length=30)
-    lemme = models.CharField(max_length=30)
+    lemma = models.CharField(max_length=30)
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -22,6 +22,6 @@ class Word(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=['word']),
-            models.Index(fields=['lemme']),
+            models.Index(fields=['lemma']),
             models.Index(fields=['dateTime']),
         ]
