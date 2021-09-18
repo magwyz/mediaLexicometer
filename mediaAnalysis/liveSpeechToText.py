@@ -15,6 +15,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mediaAnalysis.settings")
 import django
 django.setup()
 
+import spacy
+
 
 import database
 from wordProcessing import addResultToDB
@@ -28,14 +30,17 @@ def initRecognizer():
     global rec
     rec = KaldiRecognizer(model, sample_rate)
     rec.SetWords(True)
+    global nlp
+    nlp = spacy.load("fr_core_news_sm-3.1.0")
 
 
 def speechToText(data, dateTime, channel):
     global rec
+    global nlp
     if rec.AcceptWaveform(data):
         jres = json.loads(rec.Result())
         try:
-            addResultToDB(jres, dateTime, channel)
+            addResultToDB(jres, dateTime, channel, nlp)
         except:
             import traceback
             traceback.print_exc()
@@ -92,7 +97,7 @@ if __name__ == "__main__":
         print ("Please download the model from https://alphacephei.com/vosk/models and unpack as 'model' in the current folder.")
         exit (1)
 
-    parser = argparse.ArgumentParser(description = 'Capture programw from a DVB transponder and convert speech to text')
+    parser = argparse.ArgumentParser(description = 'Capture channels from a DVB transponder and convert speech to text')
     parser.add_argument('channels', nargs='+', help = "the channel names")
     parser.add_argument('--adapter-drv', default = "/dev/dvb/adapter0/dvr0",
         help = "Adapter driver")
