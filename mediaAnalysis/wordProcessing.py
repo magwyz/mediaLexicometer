@@ -8,7 +8,6 @@ from core.models import Word
 
 
 def addResultToDB(result, dateTime, channel, nlp):
-    print("addResultToDB")
     words = result["result"]
 
     dbWords = []
@@ -19,7 +18,6 @@ def addResultToDB(result, dateTime, channel, nlp):
             lemma = doc[-1].lemma_
         except:
             lemma = ""
-        print(lemma)
         dbWord = Word(dateTime = make_aware(dateTime + datetime.timedelta(seconds = w["start"])),
             word = wStr,
             lemma = lemma,
@@ -27,4 +25,5 @@ def addResultToDB(result, dateTime, channel, nlp):
         dbWords.append(dbWord)
 
     Word.objects.bulk_create(dbWords)
+    print(len(dbWords), "words added for", channel.publicName)
 
