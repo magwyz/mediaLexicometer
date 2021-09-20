@@ -14,6 +14,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mediaAnalysis.settings")
 
 import django
 django.setup()
+from django.db import connection
 
 import spacy
 
@@ -35,6 +36,7 @@ def initRecognizer():
 
 
 def speechToText(data, dateTime, channel):
+    connection.close()
     global rec
     global nlp
     if rec.AcceptWaveform(data):
