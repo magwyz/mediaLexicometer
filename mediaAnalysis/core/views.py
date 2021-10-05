@@ -68,6 +68,8 @@ def lemmaDayGraph(lemma):
         # Tweak spacing to prevent clipping of tick-labels
         plt.subplots_adjust(bottom=0.2)
 
+        fig.tight_layout()
+        fig.set_size_inches(4.5, 5)
         canvas = FigureCanvasAgg(fig)
         buf = io.BytesIO()
         canvas.print_png(buf)
