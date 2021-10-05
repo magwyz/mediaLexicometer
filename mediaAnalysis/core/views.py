@@ -58,8 +58,11 @@ def lemmaDayGraph(lemma):
         plt.bar(range(len(plotData)), plotData)
 
         plt.xlabel('Dates')
-        plt.xticks(list(range(len(plotLabels))), plotLabels)
+        plt.xticks(list(range(len(plotLabels))), plotLabels, rotation='vertical')
         plt.title(channelName)
+
+        # Tweak spacing to prevent clipping of tick-labels
+        plt.subplots_adjust(bottom=0.2)
 
         canvas = FigureCanvasAgg(fig)
         buf = io.BytesIO()
