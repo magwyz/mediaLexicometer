@@ -36,13 +36,16 @@ def lemmaDayGraph(lemma):
     channelRes = {}
     dateMin = datetime.date.max
     dateMax = datetime.date.min
+    countMax = 0
     for r in res:
         channelName = r["channel__name"]
         date = r["date"]
+        count = r["count"]
         dateObj = datetime.date.fromisoformat(date) if isinstance(date, str) else date
-        channelRes.setdefault(channelName, {})[dateObj] = r["count"]
+        channelRes.setdefault(channelName, {})[dateObj] = count
         dateMin = dateObj if dateObj < dateMin else dateMin
         dateMax = dateObj if dateObj > dateMax else dateMax
+        countMax = max(countMax, count)
 
     imgData = []
     for channelName, channelData in channelRes.items():
@@ -59,6 +62,7 @@ def lemmaDayGraph(lemma):
 
         plt.xlabel('Dates')
         plt.xticks(list(range(len(plotLabels))), plotLabels, rotation='vertical')
+        plt.ylim((0, countMax))
         plt.title(channelName)
 
         # Tweak spacing to prevent clipping of tick-labels
