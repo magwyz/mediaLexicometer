@@ -1,0 +1,12 @@
+
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit">
+</form>
+
+{% if imgData %}
+    {% for img in imgData %}
+        <img alt="Result image" src="data:image/png;base64,{{img}}"/>
+    {% endfor %}
+{% endif %}
