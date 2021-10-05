@@ -39,7 +39,7 @@ def lemmaDayGraph(lemma):
     for r in res:
         channelName = r["channel__name"]
         date = r["date"]
-        dateObj = datetime.date.fromisoformat(date)
+        dateObj = datetime.date.fromisoformat(date) if isinstance(date, str) else date
         channelRes.setdefault(channelName, {})[dateObj] = r["count"]
         dateMin = dateObj if dateObj < dateMin else dateMin
         dateMax = dateObj if dateObj > dateMax else dateMax
@@ -78,7 +78,7 @@ def countLemma(lemma):
     start_date = make_aware(datetime.datetime(2021, 9, 23, 0, 0))
     end_date = make_aware(datetime.datetime.now())
     q = Word.objects.filter(dateTime__range=(start_date, end_date), lemma=lemma) \
-        .extra({'date' : "date(dateTime)"}) \
+        .extra({'date' : "DATE(\"dateTime\")"}) \
         .values('date', 'channel__name') \
         .annotate(count=Count('lemma'))
 
