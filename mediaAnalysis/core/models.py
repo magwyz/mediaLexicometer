@@ -24,4 +24,5 @@ class Word(models.Model):
             models.Index(fields=['word']),
             models.Index(fields=['lemma']),
             models.Index(fields=['dateTime']),
+            models.Index(fields=['channel'])
         ]
