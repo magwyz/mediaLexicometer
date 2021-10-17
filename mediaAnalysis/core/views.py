@@ -5,7 +5,7 @@ import base64
 from django.shortcuts import render
 from django.utils.timezone import make_aware
 from django import forms
-from django.db.models import Count
+from django.db.models import Subquery, Count, OuterRef, F
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -31,8 +31,8 @@ def query(request):
 
 
 
-def lemmaDayGraph(lemma):
-    res = countLemma(lemma)
+def lemmaDayGraph(query):
+    res = countLemma(query)
     channelRes = {}
     dateMin = datetime.date.max
     dateMax = datetime.date.min
@@ -83,12 +83,26 @@ def lemmaDayGraph(lemma):
 
 
 
-def countLemma(lemma):
+def countLemma(query):
     start_date = make_aware(datetime.datetime(2021, 9, 23, 0, 0))
     end_date = make_aware(datetime.datetime.now())
-    q = Word.objects.filter(dateTime__range=(start_date, end_date), lemma=lemma) \
-        .extra({'date' : "DATE(\"dateTime\")"}) \
-        .values('date', 'channel__name') \
-        .annotate(count=Count('lemma'))
+
+    words = query.split()
+
+    for i, w in enumerate(words):
+        if i == 0:
+            q = Word.objects.filter(dateTime__range=(start_date, end_date),
+                                    lemma = w)\
+                    .annotate(date0 = F("dateTime"))\
+                    .annotate(channel0 = F("channel"))
+        else:
+            sq = Subquery(Word.objects.filter(
+                channel = OuterRef("channel0"),
+                dateTime__gt = OuterRef("date0")).values('lemma')[i - 1: i])
+            q = q.annotate(**{"w_{}".format(i) : sq}).filter(**{"w_{}".format(i) : w})
+
+    q = q.extra({'date' : "DATE(\"dateTime\")"}) \
+            .values('date', 'channel__name') \
+            .annotate(count=Count('lemma'))
 
     return list(q)
