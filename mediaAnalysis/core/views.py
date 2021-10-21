@@ -6,6 +6,8 @@ from django.shortcuts import render
 from django.utils.timezone import make_aware
 from django import forms
 from django.db.models import Subquery, Count, OuterRef, F
+from django.db.models.functions import Cast
+from django.db.models.fields import DateField
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -38,8 +40,8 @@ def lemmaDayGraph(query):
     dateMax = datetime.date.min
     countMax = 0
     for r in res:
-        channelName = r["channel__name"]
-        date = r["date"]
+        channelName = r["channel0Name"]
+        date = r["date0"]
         count = r["count"]
         dateObj = datetime.date.fromisoformat(date) if isinstance(date, str) else date
         channelRes.setdefault(channelName, {})[dateObj] = count
@@ -91,18 +93,18 @@ def countLemma(query):
 
     for i, w in enumerate(words):
         if i == 0:
-            q = Word.objects.filter(dateTime__range=(start_date, end_date),
-                                    lemma = w)\
-                    .annotate(date0 = F("dateTime"))\
-                    .annotate(channel0 = F("channel"))
+            q = Word.objects.filter(dateTime__range=(start_date, end_date), lemma = w)\
+                    .annotate(dateTime0 = F("dateTime"),
+                              channel0 = F("channel"),
+                              channel0Name = F("channel__name"))\
+                    .annotate(date0=Cast('dateTime', DateField()))
         else:
             sq = Subquery(Word.objects.filter(
-                channel = OuterRef("channel0"),
-                dateTime__gt = OuterRef("date0")).values('lemma')[i - 1: i])
+                dateTime__gt = OuterRef("dateTime0"),
+                channel = OuterRef("channel0")
+            ).order_by('dateTime').values('lemma')[i - 1 : i])
             q = q.annotate(**{"w_{}".format(i) : sq}).filter(**{"w_{}".format(i) : w})
 
-    q = q.extra({'date' : "DATE(\"dateTime\")"}) \
-            .values('date', 'channel__name') \
-            .annotate(count=Count('lemma'))
+    q = q.values("date0", "channel0Name").annotate(count=Count('lemma'))
 
     return list(q)
