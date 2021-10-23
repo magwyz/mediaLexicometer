@@ -53,8 +53,10 @@ def lemmaDayGraph(query):
     for channelName, channelData in channelRes.items():
 
         extandedChannelData = {dateMin + datetime.timedelta(days = x) : 0 for x in range((dateMax - dateMin).days)}
+        total = 0
         for d, c in channelData.items():
             extandedChannelData[d] = c
+            total += c
 
         plotData = list(extandedChannelData.values())
         plotLabels = list(extandedChannelData.keys())
@@ -66,6 +68,10 @@ def lemmaDayGraph(query):
         plt.xticks(list(range(len(plotLabels))), plotLabels, rotation='vertical')
         plt.ylim((0, countMax))
         plt.title(channelName)
+        plt.text(0.95, 0.95, "Total: %d" % total,
+            horizontalalignment='right', verticalalignment='center',
+            transform = fig.axes[0].transAxes,
+            fontweight = "bold")
 
         # Tweak spacing to prevent clipping of tick-labels
         plt.subplots_adjust(bottom=0.2)
@@ -93,17 +99,22 @@ def countLemma(query):
 
     for i, w in enumerate(words):
         if i == 0:
-            q = Word.objects.filter(dateTime__range=(start_date, end_date), lemma = w)\
-                    .annotate(dateTime0 = F("dateTime"),
-                              channel0 = F("channel"),
-                              channel0Name = F("channel__name"))\
-                    .annotate(date0=Cast('dateTime', DateField()))
+            q = Word.objects.filter(
+                dateTime__range=(start_date, end_date), lemma = w
+            ).annotate(dateTime0 = F("dateTime"),
+                        channel0 = F("channel"),
+                        channel0Name = F("channel__name")
+            ).annotate(date0=Cast('dateTime', DateField()))
         else:
             sq = Subquery(Word.objects.filter(
                 dateTime__gt = OuterRef("dateTime0"),
                 channel = OuterRef("channel0")
             ).order_by('dateTime').values('lemma')[i - 1 : i])
-            q = q.annotate(**{"w_{}".format(i) : sq}).filter(**{"w_{}".format(i) : w})
+            q = q.annotate(
+                **{"w_{}".format(i) : sq}
+            ).filter(
+                **{"w_{}".format(i) : w}
+            )
 
     q = q.values("date0", "channel0Name").annotate(count=Count('lemma'))
 
