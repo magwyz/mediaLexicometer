@@ -48,6 +48,7 @@ def lemmaDayGraph(query):
         dateMin = dateObj if dateObj < dateMin else dateMin
         dateMax = dateObj if dateObj > dateMax else dateMax
         countMax = max(countMax, count)
+    channelRes = dict(sorted(channelRes.items(), key=lambda item: item[0])) # sort the result dic by channel names
 
     imgData = []
     for channelName, channelData in channelRes.items():
