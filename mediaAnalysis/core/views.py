@@ -11,6 +11,7 @@ from django.db.models.fields import DateField
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.ticker import MaxNLocator
 
 from core.models import Word
 
@@ -68,10 +69,12 @@ def lemmaDayGraph(query):
         plt.xlabel('Dates')
         plt.xticks(list(range(len(plotLabels))), plotLabels, rotation='vertical')
         plt.ylim((0, countMax))
+        ax = fig.axes[0]
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.title(channelName)
         plt.text(0.95, 0.95, "Total: %d" % total,
             horizontalalignment='right', verticalalignment='center',
-            transform = fig.axes[0].transAxes,
+            transform = ax.transAxes,
             fontweight = "bold")
 
         # Tweak spacing to prevent clipping of tick-labels
