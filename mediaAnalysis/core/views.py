@@ -17,14 +17,19 @@ from core.models import Word
 
 
 class QueryForm(forms.Form):
-    query = forms.CharField(max_length=200)
+    query = forms.CharField(label="Requête", max_length=200)
+    dateMin = forms.DateTimeField(label="À partir de", initial = make_aware(datetime.datetime(2021, 9, 23, 0, 0)))
+    dateMax = forms.DateTimeField(label="Jusqu'à", initial = make_aware(datetime.datetime.now()))
 
 
 def query(request):
     if request.method == 'POST':
         form = QueryForm(request.POST)
         if form.is_valid():
-            imgData = lemmaDayGraph(form.cleaned_data["query"])
+            query = form.cleaned_data["query"]
+            dateMin = form.cleaned_data["dateMin"]
+            dateMax = form.cleaned_data["dateMax"]
+            imgData = lemmaDayGraph(query, dateMin, dateMax)
             print(len(imgData))
             return render(request, 'core/query.html', {'form': form, 'imgData' : imgData})
     else:
@@ -34,8 +39,8 @@ def query(request):
 
 
 
-def lemmaDayGraph(query):
-    res = countLemma(query)
+def lemmaDayGraph(query, dateMin, dateMax):
+    res = countLemma(query, dateMin, dateMax)
     channelRes = {}
     dateMin = datetime.date.max
     dateMax = datetime.date.min
@@ -95,16 +100,13 @@ def lemmaDayGraph(query):
 
 
 
-def countLemma(query):
-    start_date = make_aware(datetime.datetime(2021, 9, 23, 0, 0))
-    end_date = make_aware(datetime.datetime.now())
-
+def countLemma(query, dateMin, dateMax):
     words = query.split()
 
     for i, w in enumerate(words):
         if i == 0:
             q = Word.objects.filter(
-                dateTime__range=(start_date, end_date), lemma = w
+                dateTime__range=(dateMin, dateMax), lemma = w
             ).annotate(dateTime0 = F("dateTime"),
                         channel0 = F("channel"),
                         channel0Name = F("channel__name")
