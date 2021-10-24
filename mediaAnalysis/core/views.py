@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.utils.timezone import make_aware
 from django import forms
 from django.db.models import Subquery, Count, OuterRef, F
-from django.db.models.functions import Cast
+from django.db.models.functions import TruncDate
 from django.db.models.fields import DateField
 
 import matplotlib.pyplot as plt
@@ -110,7 +110,7 @@ def countLemma(query, dateMin, dateMax):
             ).annotate(dateTime0 = F("dateTime"),
                         channel0 = F("channel"),
                         channel0Name = F("channel__name")
-            ).annotate(date0=Cast('dateTime', DateField()))
+            ).annotate(date0=TruncDate('dateTime'))
         else:
             sq = Subquery(Word.objects.filter(
                 dateTime__gt = OuterRef("dateTime0"),
