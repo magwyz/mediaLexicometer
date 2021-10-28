@@ -12,8 +12,11 @@ from django.db.models.fields import DateField
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.ticker import MaxNLocator
+import spacy
 
 from core.models import Word
+
+nlp = spacy.load("fr_core_news_sm-3.1.0")
 
 
 class QueryForm(forms.Form):
@@ -29,9 +32,12 @@ def query(request):
             query = form.cleaned_data["query"]
             dateMin = form.cleaned_data["dateMin"]
             dateMax = form.cleaned_data["dateMax"]
-            imgData = lemmaDayGraph(query, dateMin, dateMax)
+            imgData, lemmas = lemmaDayGraph(query, dateMin, dateMax)
             print(len(imgData))
-            return render(request, 'core/query.html', {'form': form, 'imgData' : imgData})
+            return render(
+                request, 'core/query.html',
+                {'form': form, 'imgData' : imgData, 'lemmas' : lemmas}
+            )
     else:
         form = QueryForm()
 
@@ -40,7 +46,7 @@ def query(request):
 
 
 def lemmaDayGraph(query, dateMin, dateMax):
-    res = countLemma(query, dateMin, dateMax)
+    res, lemmas = countLemma(query, dateMin, dateMax)
     channelRes = {}
     dateMin = datetime.date.max
     dateMax = datetime.date.min
@@ -96,14 +102,15 @@ def lemmaDayGraph(query, dateMin, dateMax):
 
         imgData.append(base64.b64encode(buf.read()).decode('ascii'))
 
-    return imgData
+    return imgData, lemmas
 
 
 
 def countLemma(query, dateMin, dateMax):
     words = query.split()
+    lemmas = [nlp(word)[-1].lemma_ for word in words]
 
-    for i, w in enumerate(words):
+    for i, w in enumerate(lemmas):
         if i == 0:
             q = Word.objects.filter(
                 dateTime__range=(dateMin, dateMax), lemma = w
@@ -124,4 +131,4 @@ def countLemma(query, dateMin, dateMax):
 
     q = q.values("date0", "channel0Name").annotate(count=Count('lemma'))
 
-    return list(q)
+    return list(q), lemmas
