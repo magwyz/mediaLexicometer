@@ -63,6 +63,7 @@ def lemmaDayGraph(query, dateMin, dateMax):
     channelRes = dict(sorted(channelRes.items(), key=lambda item: item[0])) # sort the result dic by channel names
 
     imgData = []
+    totals = {}
     for channelName, channelData in channelRes.items():
 
         extandedChannelData = {dateMin + datetime.timedelta(days = x) : 0 for x in range((dateMax - dateMin).days)}
@@ -70,6 +71,7 @@ def lemmaDayGraph(query, dateMin, dateMax):
         for d, c in channelData.items():
             extandedChannelData[d] = c
             total += c
+        totals[channelName] = total
 
         plotData = list(extandedChannelData.values())
         plotLabels = list(extandedChannelData.keys())
@@ -92,7 +94,7 @@ def lemmaDayGraph(query, dateMin, dateMax):
         plt.subplots_adjust(bottom=0.2)
 
         fig.tight_layout()
-        fig.set_size_inches(4.5, 5)
+        fig.set_size_inches(3.5, 5)
         canvas = FigureCanvasAgg(fig)
         buf = io.BytesIO()
         canvas.print_png(buf)
@@ -102,8 +104,24 @@ def lemmaDayGraph(query, dateMin, dateMax):
 
         imgData.append(base64.b64encode(buf.read()).decode('ascii'))
 
+    # Pie chart
+    fig = plt.figure()
+    fig.tight_layout()
+    fig.set_size_inches(4, 5)
+    plt.title("Répartition")
+    plt.pie(totals.values(), labels=totals.keys())
+    imgData.append(saveFigureImg(fig))
+
     return imgData, lemmas
 
+
+def saveFigureImg(fig):
+    canvas = FigureCanvasAgg(fig)
+    buf = io.BytesIO()
+    canvas.print_png(buf)
+    plt.close(fig)
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode('ascii')
 
 
 def countLemma(query, dateMin, dateMax):
