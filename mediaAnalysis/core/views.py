@@ -100,10 +100,8 @@ def lemmaDayGraph(query, dateMin, dateMax):
             fontweight = "bold")
 
         # Tweak spacing to prevent clipping of tick-labels
-        plt.subplots_adjust(bottom=0.2)
-
-        fig.tight_layout()
-        fig.set_size_inches(3.5, 5)
+        fig.tight_layout(rect=[0.07, 0, 1, 1])
+        fig.set_size_inches(3.6, 5)
         canvas = FigureCanvasAgg(fig)
         buf = io.BytesIO()
         canvas.print_png(buf)
