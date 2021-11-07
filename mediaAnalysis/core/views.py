@@ -86,7 +86,7 @@ def lemmaDayGraph(query, dateMin, dateMax):
                 plotLabels[i] = ""
 
         fig = plt.figure()
-        plt.bar(range(len(plotData)), plotData)
+        plt.bar(range(len(plotData)), plotData, width=1)
 
         plt.xlabel('Dates')
         plt.xticks(list(range(len(plotLabels))), plotLabels, rotation='vertical')
