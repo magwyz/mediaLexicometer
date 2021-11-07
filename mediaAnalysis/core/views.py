@@ -1,6 +1,7 @@
 import datetime
 import io
 import base64
+import time
 
 from django.shortcuts import render
 from django.utils.timezone import make_aware
@@ -32,11 +33,14 @@ def query(request):
             query = form.cleaned_data["query"]
             dateMin = form.cleaned_data["dateMin"]
             dateMax = form.cleaned_data["dateMax"]
-            imgData, lemmas = lemmaDayGraph(query, dateMin, dateMax)
-            print(len(imgData))
+            imgData, lemmas, queryTime = lemmaDayGraph(query, dateMin, dateMax)
             return render(
                 request, 'core/query.html',
-                {'form': form, 'imgData' : imgData, 'lemmas' : lemmas}
+                {
+                    'form': form,
+                    'imgData' : imgData,
+                    'lemmas' : lemmas,
+                    'queryTime' : float(queryTime)}
             )
     else:
         form = QueryForm(initial={'dateMax': make_aware(datetime.datetime.now())})
@@ -46,6 +50,7 @@ def query(request):
 
 
 def lemmaDayGraph(query, dateMin, dateMax):
+    start = time.time()
     res, lemmas = countLemma(query, dateMin, dateMax)
     channelRes = {}
     dateMin = datetime.date.max
@@ -116,7 +121,10 @@ def lemmaDayGraph(query, dateMin, dateMax):
     plt.pie(totals.values(), labels=totals.keys())
     imgData.append(saveFigureImg(fig))
 
-    return imgData, lemmas
+    end = time.time()
+    queryTime = end - start
+
+    return imgData, lemmas, queryTime
 
 
 def saveFigureImg(fig):

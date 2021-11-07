@@ -9,6 +9,7 @@
 
 {% if lemmas %}
     <h1>Résultats :</h1>
+    <p>Temps: {{ queryTime|floatformat:2 }} s.</p>
     <p>Lemmes:
     {% for lemma in lemmas%}
         {{ lemma }}
