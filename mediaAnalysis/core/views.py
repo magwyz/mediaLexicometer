@@ -22,7 +22,7 @@ nlp = spacy.load("fr_core_news_sm-3.1.0")
 class QueryForm(forms.Form):
     query = forms.CharField(label="Requête", max_length=200)
     dateMin = forms.DateTimeField(label="À partir de", initial = make_aware(datetime.datetime(2021, 9, 23, 0, 0)))
-    dateMax = forms.DateTimeField(label="Jusqu'à", initial = make_aware(datetime.datetime.now()))
+    dateMax = forms.DateTimeField(label="Jusqu'à")
 
 
 def query(request):
@@ -39,7 +39,7 @@ def query(request):
                 {'form': form, 'imgData' : imgData, 'lemmas' : lemmas}
             )
     else:
-        form = QueryForm()
+        form = QueryForm(initial={'dateMax': make_aware(datetime.datetime.now())})
 
     return render(request, 'core/query.html', {'form': form})
 
