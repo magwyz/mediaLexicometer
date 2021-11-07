@@ -79,7 +79,12 @@ def lemmaDayGraph(query, dateMin, dateMax):
         totals[channelName] = total
 
         plotData = list(extandedChannelData.values())
-        plotLabels = list(extandedChannelData.keys())
+        plotLabels = list(
+            map(
+                lambda x : x.strftime('%d/%m/%y'),
+                extandedChannelData.keys()
+            )
+        )
 
         if len(plotLabels) > 30:
             for i in range(1, len(plotLabels), 2):
