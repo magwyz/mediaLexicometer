@@ -98,7 +98,7 @@ def lemmaDayGraph(query, dateMin, dateMax):
         plt.ylim((0, countMax))
         ax = fig.axes[0]
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-        plt.title(channelName)
+        plt.suptitle(channelName)
         plt.text(0.95, 0.95, "Total: %d" % total,
             horizontalalignment='right', verticalalignment='center',
             transform = ax.transAxes,
@@ -124,7 +124,9 @@ def lemmaDayGraph(query, dateMin, dateMax):
     for lemma in lemmas:
         title += lemma + " "
     title = title[:-1]
-    plt.title(title)
+    plt.suptitle(title)
+    plt.title("Total : " + str(sum(totals.values())),
+        fontweight = "bold", fontsize="medium")
     plt.pie(totals.values(), labels=totals.keys())
     imgData = [saveFigureImg(fig)] + imgData
 
