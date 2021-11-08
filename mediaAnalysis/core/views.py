@@ -120,9 +120,13 @@ def lemmaDayGraph(query, dateMin, dateMax):
     fig = plt.figure()
     fig.tight_layout()
     fig.set_size_inches(4, 5)
-    plt.title("Répartition")
+    title = ""
+    for lemma in lemmas:
+        title += lemma + " "
+    title = title[:-1]
+    plt.title(title)
     plt.pie(totals.values(), labels=totals.keys())
-    imgData.append(saveFigureImg(fig))
+    imgData = [saveFigureImg(fig)] + imgData
 
     end = time.time()
     queryTime = end - start
