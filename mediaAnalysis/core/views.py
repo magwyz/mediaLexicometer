@@ -86,9 +86,11 @@ def lemmaDayGraph(query, dateMin, dateMax):
             )
         )
 
-        if len(plotLabels) > 30:
-            for i in range(1, len(plotLabels), 2):
-                plotLabels[i] = ""
+        f = len(plotLabels) // 30
+        if f >= 1:
+            for i in range(len(plotLabels)):
+                if i % (f + 1) > 0:
+                    plotLabels[i] = ""
 
         fig = plt.figure()
         plt.bar(range(len(plotData)), plotData, width=1)
