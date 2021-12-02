@@ -34,6 +34,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Get the models
+
+Download the spacy model from [here](https://github.com/explosion/spacy-models/releases/tag/fr_core_news_sm-3.1.0)
+and decompress it in the main application folder.
+
+Download the Vosk model from [here](https://alphacephei.com/nsh/2020/10/21/french.html) and decompress the content
+of the `vosk-model-fr-0.6-linto` directory in the archive in a `model` directory in the main application folder.
+
+
 ### Add the channels to the database
 
 ```
