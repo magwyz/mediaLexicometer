@@ -18,7 +18,7 @@ def addResultToDB(result, dateTime, channel, nlp):
             lemma = doc[-1].lemma_
         except:
             lemma = ""
-        dbWord = Word(dateTime = make_aware(dateTime + datetime.timedelta(seconds = w["start"])),
+        dbWord = Word(dateTime = make_aware(dateTime + datetime.timedelta(seconds = w["start_frame"])),
             word = wStr,
             lemma = lemma,
             channel = channel)
