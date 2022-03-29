@@ -25,14 +25,12 @@ from wordProcessing import addResultToDB
 sample_rate = 48000
 
 
-def initRecognizer():
-    SetLogLevel(0)
-    model = Model("model")
+def initRecognizer(common_model, common_nlp):
     global rec
-    rec = KaldiRecognizer(model, sample_rate)
+    rec = KaldiRecognizer(common_model, sample_rate)
     rec.SetWords(True)
     global nlp
-    nlp = spacy.load("fr_core_news_sm-3.1.0")
+    nlp = common_nlp
 
 
 def speechToText(data, dateTime, channel):
@@ -48,7 +46,7 @@ def speechToText(data, dateTime, channel):
             traceback.print_exc()
 
 
-def processReadChannel(pool, channel):
+def processReadChannel(pool, poolLock, channel):
     bufferLenSec = 60
     audioData = b""
     dateTime = datetime.datetime.now()
@@ -61,13 +59,21 @@ def processReadChannel(pool, channel):
         data = fd.read(toRead)
         audioData += data
         if len(audioData) >= toRead:
+            poolLock.acquire()
             pool.apply_async(speechToText, (audioData, dateTime, channel))
+            poolLock.release()
             audioData = b""
             dateTime = datetime.datetime.now()
 
 
 def process(adapterDrv, channels):
-    pool = multiprocessing.Pool(len(channels), initRecognizer)
+    SetLogLevel(0)
+    model = Model("model")
+
+    nlp = spacy.load("fr_core_news_sm-3.1.0")
+
+    multiprocessing.set_start_method('fork')
+    pool = multiprocessing.Pool(len(channels), initRecognizer, (model, nlp))
 
     ffmpegCmdLine = ['ffmpeg', '-y', '-v', 'quiet', '-i', adapterDrv]
 
@@ -83,8 +89,9 @@ def process(adapterDrv, channels):
     subprocess.Popen(ffmpegCmdLine)
 
     threads = []
+    poolLock = threading.Lock()
     for channel in channels:
-        t = threading.Thread(target = processReadChannel, args = (pool, channel))
+        t = threading.Thread(target = processReadChannel, args = (pool, poolLock, channel))
         t.start()
         threads.append(t)
 
