@@ -1,3 +1,5 @@
 venv/
 model/
 *.pyc
+fr_core_news_sm*
+vosk-model*
