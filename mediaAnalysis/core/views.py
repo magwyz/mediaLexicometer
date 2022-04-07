@@ -9,6 +9,7 @@ from django import forms
 from django.db.models import Subquery, Count, OuterRef, F
 from django.db.models.functions import TruncDate
 from django.db.models.fields import DateField
+from django.views.decorators.csrf import csrf_exempt
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -21,29 +22,30 @@ nlp = spacy.load("fr_core_news_sm-3.1.0")
 
 
 class QueryForm(forms.Form):
-    query = forms.CharField(label="Requête", max_length=200)
-    dateMin = forms.DateTimeField(label="À partir de", initial = make_aware(datetime.datetime(2021, 9, 23, 0, 0)))
-    dateMax = forms.DateTimeField(label="Jusqu'à")
+    q = forms.CharField(label="Requête", max_length=200)
+    dmin = forms.DateTimeField(label="À partir de", initial = make_aware(datetime.datetime(2021, 9, 23, 0, 0)))
+    dmax = forms.DateTimeField(label="Jusqu'à")
 
 
+@csrf_exempt
 def query(request):
-    if request.method == 'POST':
-        form = QueryForm(request.POST)
-        if form.is_valid():
-            query = form.cleaned_data["query"]
-            dateMin = form.cleaned_data["dateMin"]
-            dateMax = form.cleaned_data["dateMax"]
-            imgData, lemmas, queryTime = lemmaDayGraph(query, dateMin, dateMax)
-            return render(
-                request, 'core/query.html',
-                {
-                    'form': form,
-                    'imgData' : imgData,
-                    'lemmas' : lemmas,
-                    'queryTime' : float(queryTime)}
-            )
+    form = QueryForm(request.GET)
+    if form.is_valid():
+        query = form.cleaned_data["q"]
+        dateMin = form.cleaned_data["dmin"]
+        dateMax = form.cleaned_data["dmax"]
+        imgData, lemmas, queryTime = lemmaDayGraph(query, dateMin, dateMax)
+        return render(
+            request, 'core/query.html',
+            {
+                'form': form,
+                'imgData' : imgData,
+                'lemmas' : lemmas,
+                'queryTime' : float(queryTime)
+            }
+        )
     else:
-        form = QueryForm(initial={'dateMax': make_aware(datetime.datetime.now())})
+        form = QueryForm(initial={'dmax': make_aware(datetime.datetime.now())})
 
     return render(request, 'core/query.html', {'form': form})
 
