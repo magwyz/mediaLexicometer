@@ -25,5 +25,5 @@ def addResultToDB(result, dateTime, channel, nlp):
         dbWords.append(dbWord)
 
     Word.objects.bulk_create(dbWords)
-    print(len(dbWords), "words added for", channel.publicName)
+    pprint("%d words added for %s" % (len(dbWords), channel.publicName))
 

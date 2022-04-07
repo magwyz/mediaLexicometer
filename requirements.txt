@@ -3,3 +3,4 @@ vosk
 spacy
 psycopg2
 matplotlib
+celery[redis]

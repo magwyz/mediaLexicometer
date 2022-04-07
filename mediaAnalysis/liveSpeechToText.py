@@ -5,7 +5,6 @@ import os
 import json
 import subprocess
 import threading
-import multiprocessing
 import argparse
 import datetime
 import os
@@ -14,7 +13,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mediaAnalysis.settings")
 
 import django
 django.setup()
-from django.db import connection
 
 import spacy
 
@@ -24,17 +22,28 @@ from wordProcessing import addResultToDB
 
 sample_rate = 48000
 
+from celery import Celery
+from celery.signals import worker_process_init
 
-def initRecognizer(common_model, common_nlp):
+app = Celery('liveSpeechToText_celery',
+    broker='redis://localhost:6379/0',
+    accept_content=['pickle'],
+    task_serializer='pickle')
+
+
+@worker_process_init.connect()
+def setup(**kwargs):
+    SetLogLevel(0)
+    model = Model("model")
     global rec
-    rec = KaldiRecognizer(common_model, sample_rate)
+    rec = KaldiRecognizer(model, sample_rate)
     rec.SetWords(True)
     global nlp
-    nlp = common_nlp
+    nlp = spacy.load("fr_core_news_sm-3.1.0")
 
 
+@app.task
 def speechToText(data, dateTime, channel):
-    connection.close()
     global rec
     global nlp
     if rec.AcceptWaveform(data):
@@ -46,7 +55,7 @@ def speechToText(data, dateTime, channel):
             traceback.print_exc()
 
 
-def processReadChannel(pool, poolLock, channel):
+def processReadChannel(channel):
     bufferLenSec = 60
     audioData = b""
     dateTime = datetime.datetime.now()
@@ -59,22 +68,12 @@ def processReadChannel(pool, poolLock, channel):
         data = fd.read(toRead)
         audioData += data
         if len(audioData) >= toRead:
-            poolLock.acquire()
-            pool.apply_async(speechToText, (audioData, dateTime, channel))
-            poolLock.release()
+            speechToText.delay(audioData, dateTime, channel)
             audioData = b""
             dateTime = datetime.datetime.now()
 
 
 def process(adapterDrv, channels):
-    SetLogLevel(0)
-    model = Model("model")
-
-    nlp = spacy.load("fr_core_news_sm-3.1.0")
-
-    multiprocessing.set_start_method('fork')
-    pool = multiprocessing.Pool(len(channels), initRecognizer, (model, nlp))
-
     ffmpegCmdLine = ['ffmpeg', '-y', '-v', 'quiet', '-i', adapterDrv]
 
     for channel in channels:
@@ -89,9 +88,8 @@ def process(adapterDrv, channels):
     subprocess.Popen(ffmpegCmdLine)
 
     threads = []
-    poolLock = threading.Lock()
     for channel in channels:
-        t = threading.Thread(target = processReadChannel, args = (pool, poolLock, channel))
+        t = threading.Thread(target = processReadChannel, args = (channel,))
         t.start()
         threads.append(t)
 
