@@ -10,6 +10,7 @@ from django.db.models import Subquery, Count, OuterRef, F
 from django.db.models.functions import TruncDate
 from django.db.models.fields import DateField
 from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -34,16 +35,31 @@ def query(request):
         query = form.cleaned_data["q"]
         dateMin = form.cleaned_data["dmin"]
         dateMax = form.cleaned_data["dmax"]
-        imgData, lemmas, queryTime = lemmaDayGraph(query, dateMin, dateMax)
-        return render(
-            request, 'core/query.html',
-            {
-                'form': form,
-                'imgData' : imgData,
-                'lemmas' : lemmas,
-                'queryTime' : float(queryTime)
-            }
-        )
+        action = request.GET.get('action')
+        page = request.GET.get('page')
+        if action == "count":
+            imgData, lemmas, queryTime = lemmaDayGraph(query, dateMin, dateMax)
+            return render(
+                request, 'core/query.html',
+                {
+                    'form': form,
+                    'imgData' : imgData,
+                    'lemmas' : lemmas,
+                    'queryTime' : float(queryTime)
+                }
+            )
+        else:
+            page = 0 if page is None else int(page)
+            lemmas, occurences, queryTime = getLemmaContext(query, dateMin, dateMax, page)
+            return render(
+                request, 'core/query.html',
+                {
+                    'form': form,
+                    'lemmas' : lemmas,
+                    'queryTime' : float(queryTime),
+                    'occurences' : occurences
+                }
+            )
     else:
         form = QueryForm(initial={'dmax': make_aware(datetime.datetime.now())})
 
@@ -150,7 +166,7 @@ def saveFigureImg(fig):
     return base64.b64encode(buf.read()).decode('ascii')
 
 
-def countLemma(query, dateMin, dateMax):
+def getLemma(query, dateMin, dateMax):
     words = query.split()
     lemmas = [nlp(word)[-1].lemma_ for word in words]
 
@@ -173,6 +189,33 @@ def countLemma(query, dateMin, dateMax):
                 **{"w_{}".format(i) : w}
             )
 
+    return lemmas, q
+
+
+def countLemma(query, dateMin, dateMax):
+    lemmas, q = getLemma(query, dateMin, dateMax)
     q = q.values("date0", "channel0Name").annotate(count=Count('lemma'))
 
     return list(q), lemmas
+
+
+def getLemmaContext(query, dateMin, dateMax, page):
+    start = time.time()
+    lemmas, q = getLemma(query, dateMin, dateMax)
+
+    paginator = Paginator(q, 25)
+    occurences = paginator.get_page(page)
+
+    for res in occurences:
+        context = ""
+        q2 = Word.objects.filter(dateTime__range=(
+            res.dateTime - datetime.timedelta(seconds=15),
+            res.dateTime + datetime.timedelta(seconds=15)), channel = res.channel)
+        for res2 in q2:
+            context += res2.word + " "
+        res.context = context
+
+    end = time.time()
+    queryTime = end - start
+
+    return lemmas, occurences, queryTime
