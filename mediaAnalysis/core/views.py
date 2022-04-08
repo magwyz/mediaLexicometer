@@ -49,7 +49,7 @@ def query(request):
                 }
             )
         else:
-            page = 0 if page is None else int(page)
+            page = 1 if page is None else int(page)
             lemmas, occurences, queryTime = getLemmaContext(query, dateMin, dateMax, page)
             return render(
                 request, 'core/query.html',
