@@ -2,7 +2,7 @@ from django.db import models
 
 
 class Channel(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30, unique = True)
     publicName = models.CharField(max_length=30)
     programId = models.IntegerField()
 
