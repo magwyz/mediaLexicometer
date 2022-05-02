@@ -17,12 +17,20 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.ticker import MaxNLocator
 import spacy
 
-from core.models import Word
+from core.models import Word, Channel
 
 nlp = spacy.load("fr_core_news_sm-3.1.0")
 
 
 class QueryForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(QueryForm, self).__init__(*args, **kwargs)
+        self.fields['channel'] = forms.ChoiceField(
+            choices=[("all", "Toutes")] + [(c.name, c.publicName) for c in Channel.objects.all()],
+            label="Chaîne"
+        )
+
     q = forms.CharField(label="Requête", max_length=200)
     dmin = forms.DateTimeField(label="À partir de", initial = make_aware(datetime.datetime(2021, 9, 23, 0, 0)))
     dmax = forms.DateTimeField(label="Jusqu'à")
@@ -35,10 +43,11 @@ def query(request):
         query = form.cleaned_data["q"]
         dateMin = form.cleaned_data["dmin"]
         dateMax = form.cleaned_data["dmax"]
+        channel = form.cleaned_data["channel"]
         action = request.GET.get('action')
         page = request.GET.get('page')
         if action == "count":
-            imgData, lemmas, queryTime = lemmaDayGraph(query, dateMin, dateMax)
+            imgData, lemmas, queryTime = lemmaDayGraph(query, dateMin, dateMax, channel)
             return render(
                 request, 'core/query.html',
                 {
@@ -50,7 +59,7 @@ def query(request):
             )
         else:
             page = 1 if page is None else int(page)
-            lemmas, occurences, queryTime = getLemmaContext(query, dateMin, dateMax, page)
+            lemmas, occurences, queryTime = getLemmaContext(query, dateMin, dateMax, channel, page)
             return render(
                 request, 'core/query.html',
                 {
@@ -67,9 +76,9 @@ def query(request):
 
 
 
-def lemmaDayGraph(query, dateMin, dateMax):
+def lemmaDayGraph(query, dateMin, dateMax, channel):
     start = time.time()
-    res, lemmas = countLemma(query, dateMin, dateMax)
+    res, lemmas = countLemma(query, dateMin, dateMax, channel)
     channelRes = {}
     dateMin = datetime.date.max
     dateMax = datetime.date.min
@@ -166,7 +175,7 @@ def saveFigureImg(fig):
     return base64.b64encode(buf.read()).decode('ascii')
 
 
-def getLemma(query, dateMin, dateMax):
+def getLemma(query, dateMin, dateMax, channel):
     words = query.split()
     lemmas = [nlp(word)[-1].lemma_ for word in words]
 
@@ -174,15 +183,20 @@ def getLemma(query, dateMin, dateMax):
         if i == 0:
             q = Word.objects.filter(
                 dateTime__range=(dateMin, dateMax), lemma = w
-            ).annotate(dateTime0 = F("dateTime"),
+            )
+            if channel != "all":
+                q = q.filter(channel__name = channel)
+            q = q.annotate(dateTime0 = F("dateTime"),
                         channel0 = F("channel"),
                         channel0Name = F("channel__name")
             ).annotate(date0=TruncDate('dateTime'))
         else:
-            sq = Subquery(Word.objects.filter(
+            sq = Word.objects.filter(
                 dateTime__gt = OuterRef("dateTime0"),
-                channel = OuterRef("channel0")
-            ).order_by('dateTime').values('lemma')[i - 1 : i])
+                channel = OuterRef("channel0"))
+            if channel != "all":
+                sq = sq.filter(channel__name = channel)
+            sq = Subquery(sq.order_by('dateTime').values('lemma')[i - 1 : i])
             q = q.annotate(
                 **{"w_{}".format(i) : sq}
             ).filter(
@@ -192,16 +206,16 @@ def getLemma(query, dateMin, dateMax):
     return lemmas, q
 
 
-def countLemma(query, dateMin, dateMax):
-    lemmas, q = getLemma(query, dateMin, dateMax)
+def countLemma(query, dateMin, dateMax, channel):
+    lemmas, q = getLemma(query, dateMin, dateMax, channel)
     q = q.values("date0", "channel0Name").annotate(count=Count('lemma'))
 
     return list(q), lemmas
 
 
-def getLemmaContext(query, dateMin, dateMax, page):
+def getLemmaContext(query, dateMin, dateMax, channel, page):
     start = time.time()
-    lemmas, q = getLemma(query, dateMin, dateMax)
+    lemmas, q = getLemma(query, dateMin, dateMax, channel)
 
     paginator = Paginator(q, 25)
     occurences = paginator.get_page(page)
