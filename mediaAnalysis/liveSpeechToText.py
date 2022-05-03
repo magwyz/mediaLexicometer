@@ -47,7 +47,7 @@ def speechToText(data, dateTime, channel):
     global rec
     global nlp
     if rec.AcceptWaveform(data):
-        jres = json.loads(rec.Result())
+        jres = json.loads(rec.FinalResult())
         try:
             addResultToDB(jres, dateTime, channel, nlp)
         except:
