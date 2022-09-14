@@ -8,6 +8,7 @@ import threading
 import argparse
 import datetime
 import os
+import time
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mediaAnalysis.settings")
 
@@ -71,6 +72,8 @@ def processReadChannel(channel):
             speechToText.delay(audioData, dateTime, channel)
             audioData = b""
             dateTime = datetime.datetime.now()
+        else:
+            time.sleep(10)
 
 
 def process(adapterDrv, channels):
