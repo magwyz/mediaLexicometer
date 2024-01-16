@@ -34,7 +34,9 @@
     <div class="pagination">
         <span class="step-links">
 
-            {% with params="?q="|add:form.q.value|add:"&dmin="|add:form.dmin.value|add:"&dmax="|add:form.dmax.value|add:"&action=search" %}
+            {% with channelsParam=form.channels.value|join:"," %}
+
+            {% with params="?q="|add:form.q.value|add:"&dmin="|add:form.dmin.value|add:"&dmax="|add:form.dmax.value|add:"&channels="|add:channelsParam|add:"&action=search" %}
 
             {% if occurences.has_previous %}
                 <a href="{{ params }}&page=1">&laquo; first</a>
@@ -49,6 +51,7 @@
                 <a href="{{ params }}&page={{ occurences.next_page_number }}">next</a>
                 <a href="{{ params }}&page={{ occurences.paginator.num_pages }}">last &raquo;</a>
             {% endif %}
+            {% endwith %}
             {% endwith %}
         </span>
     </div>
