@@ -47,13 +47,13 @@ def setup(**kwargs):
 def speechToText(data, dateTime, channel):
     global rec
     global nlp
-    if rec.AcceptWaveform(data):
-        jres = json.loads(rec.FinalResult())
-        try:
-            addResultToDB(jres, dateTime, channel, nlp)
-        except:
-            import traceback
-            traceback.print_exc()
+    rec.AcceptWaveform(data)
+    jres = json.loads(rec.FinalResult())
+    try:
+        addResultToDB(jres, dateTime, channel, nlp)
+    except:
+        import traceback
+        traceback.print_exc()
 
 
 def processReadChannel(channel):
@@ -77,8 +77,12 @@ def processReadChannel(channel):
 
 
 def process(adapterDrv, channels):
-    ffmpegCmdLine = ['ffmpeg', '-y', '-v', 'quiet', '-i', adapterDrv]
-
+    ffmpegCmdLine = ['ffmpeg', '-y', '-i', adapterDrv]
+    try:
+        os.mkfifo("eit")
+    except FileExistsError:
+        pass
+    #ffmpegCmdLine += ['-map', '0', '-c', 'copy', '-copy_unknown', "out.mp4"]
     for channel in channels:
         p = channel.programId
         fifoName = "fifo" + str(p)
@@ -88,7 +92,7 @@ def process(adapterDrv, channels):
             pass
         ffmpegCmdLine += ['-map', '0:p:%d:a:0' % p, '-ar', str(sample_rate) , '-ac', '1', '-f', 's16le', fifoName]
 
-    subprocess.Popen(ffmpegCmdLine)
+    subprocess.Popen(ffmpegCmdLine, stdout=subprocess.PIPE)
 
     threads = []
     for channel in channels:
